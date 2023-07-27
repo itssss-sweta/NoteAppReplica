@@ -1,11 +1,12 @@
 class Note {
-  String? text;
+  String text;
   int? id;
-  String? title;
+  String title;
+  String? imagePath;
 
-  Note({
-    required this.text,
-    required this.id,
-    required this.title,
-  });
+  Note(
+      {required this.text,
+      required this.id,
+      required this.title,
+      this.imagePath});
 }

@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
 import './screen/home.dart';
 import 'package:provider/provider.dart';
-import 'package:hive_flutter/adapters.dart';
-import '../screen/addnote.dart';
+import './function/addnote.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  //initialize hive
-  await Hive.initFlutter();
-  //Hive.registerAdapter(NoteData());
-  //open a hive box
-  await Hive.openBox('note_database');
   runApp(const NoteApp());
 }
 

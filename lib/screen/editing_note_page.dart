@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:noteappreplica/color%20palette/colors.dart';
-import '../screen/addnote.dart';
+import '../function/addnote.dart';
 import 'package:provider/provider.dart';
 import '../model/note.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class EditingNotePage extends StatefulWidget {
   final Note note;
@@ -17,44 +18,46 @@ class EditingNotePage extends StatefulWidget {
 }
 
 class _EditingNotePageState extends State<EditingNotePage> {
-  late QuillController _controller = QuillController.basic();
-  late TextEditingController _titleController;
-  //late TextEditingController _textController;
+  late TextEditingController _titleController = TextEditingController(text: '');
+  late TextEditingController _textController = TextEditingController(text: '');
+  File? image;
+  OverlayEntry? overlayEntry;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
-    loadExistingNote();
+    _titleController = TextEditingController(text: widget.note.title);
+    _textController = TextEditingController(text: widget.note.text);
+
+    if (widget.note.imagePath != null) {
+      image = _getImage(widget.note.imagePath);
+    }
   }
 
-  //load existing note
-  void loadExistingNote() {
-    final doc = Document()..insert(0, widget.note.text);
-    setState(() {
-      _controller = QuillController(
-          document: doc, selection: const TextSelection.collapsed(offset: 0));
-      _titleController.text = widget.note.title ?? '';
-    });
+  File? _getImage(String? imagePath) {
+    if (imagePath != null && imagePath.isNotEmpty) {
+      return File(imagePath);
+    }
+    return null;
   }
 
   //add new note
   void addNewNote() {
     final noteData = Provider.of<NoteData>(context, listen: false);
     final title = _titleController.text;
-    final text = _controller.document.toPlainText();
+    final text = _textController.text;
     //get id
     int id = noteData.getAllNotes().length;
     //add new note
     noteData.addNewNote(
-      Note(text: text, id: id, title: title),
+      Note(text: text, id: id, title: title, imagePath: null),
     );
   }
 
   //update existing code
   void updateNote() {
     final noteData = Provider.of<NoteData>(context, listen: false);
-    String text = _controller.document.toPlainText();
+    String text = _textController.text;
     String title = _titleController.text;
 
     if (text.isEmpty && title.isEmpty) {
@@ -65,11 +68,76 @@ class _EditingNotePageState extends State<EditingNotePage> {
     noteData.updateNote(widget.note, title, text);
   }
 
+  void showOverlay(BuildContext context) {
+    final overlay = Overlay.of(context);
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        child: GestureDetector(
+          onTap: () {
+            // Remove the overlay when tapped
+            overlayEntry?.remove();
+          },
+          child: Container(
+            color: Colors.transparent,
+            child: Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    image = null; // Remove the image
+                    widget.note.imagePath =
+                        null; // Clear the image path in the Note object
+                  });
+                  overlayEntry?.remove(); // Remove the overlay
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: const CircleBorder(),
+                ),
+                child: const Icon(Icons.delete),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Insert the overlay
+    overlay.insert(overlayEntry!);
+  }
+
   @override
   void dispose() {
-    _controller.dispose();
+    _textController.dispose();
     _titleController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      File pickedImage = File(pickedFile.path);
+      setState(() {
+        image = pickedImage;
+        widget.note.imagePath = pickedImage.path;
+      });
+    }
+  }
+
+  void _updateNoteAndImage() {
+    final noteData = Provider.of<NoteData>(context, listen: false);
+    noteData.updateNoteTitle(widget.note, _titleController.text);
+    //widget.note.imagePath = _textController.text;
+
+    if (image != null) {
+      widget.note.imagePath = image?.path;
+    }
   }
 
   @override
@@ -87,14 +155,28 @@ class _EditingNotePageState extends State<EditingNotePage> {
         ),
         actions: [
           IconButton(
+            onPressed: () async {
+              await _pickImage();
+              _updateNoteAndImage();
+              //Navigator.pop(context, true);
+            },
+            icon: const Icon(
+              Icons.add_photo_alternate_outlined,
+              color: Colors.black,
+            ),
+          ),
+          IconButton(
             onPressed: () {
-              if (widget.isNewNote && !_controller.document.isEmpty()) {
+              if (widget.isNewNote &&
+                  (_textController.text.isNotEmpty ||
+                      _titleController.text.isNotEmpty)) {
                 addNewNote();
               } else {
                 updateNote();
               }
-              Provider.of<NoteData>(context, listen: false)
-                  .updateNoteTitle(widget.note, _titleController.text);
+
+              _updateNoteAndImage();
+
               Navigator.pop(context);
             },
             icon: const Icon(
@@ -104,7 +186,7 @@ class _EditingNotePageState extends State<EditingNotePage> {
           ),
         ],
       ),
-      body: Column(
+      body: ListView(
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(25, 25, 25, 0),
@@ -113,30 +195,48 @@ class _EditingNotePageState extends State<EditingNotePage> {
                 hintText: 'Title',
                 hintStyle: TextStyle(
                   fontSize: 20,
-                  color: textColor,
+                  color: hintTextColor,
                 ),
               ),
               controller: _titleController,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: textColor,
               ),
             ),
           ),
 
           //editor
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(25),
-              child: Column(
-                children: [
-                  QuillEditor.basic(
-                    controller: _controller,
-                    readOnly: false,
-                  ),
-                ],
+          Padding(
+            padding: const EdgeInsets.all(25),
+            child: TextField(
+              controller: _textController,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              decoration: const InputDecoration(border: InputBorder.none),
+              style: TextStyle(
+                color: textColor,
+                fontSize: 20,
+                fontWeight: FontWeight.w400,
               ),
             ),
+          ),
+          Stack(
+            children: [
+              if (image != null)
+                GestureDetector(
+                  onLongPress: () => showOverlay(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    width: 200,
+                    child: Image.file(
+                      image!,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

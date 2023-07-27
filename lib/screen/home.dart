@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../color palette/colors.dart';
 import 'package:provider/provider.dart';
 import '../model/note.dart';
-import '../screen/addnote.dart';
+import '../function/addnote.dart';
 import '../screen/editing_note_page.dart';
+import '../function/taskcolumn.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +14,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool showNewFolderOption = false;
   @override
   void initState() {
     super.initState();
@@ -21,7 +21,7 @@ class _HomePageState extends State<HomePage> {
     Provider.of<NoteData>(context, listen: false).initializeNotes();
   }
 
-  //create a neew note
+  //create a new note
   void createNewNote() {
     //create a new id
     int id = Provider.of<NoteData>(context, listen: false).getAllNotes().length;
@@ -38,8 +38,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   //goto note editing page
-  void goToNotePage(Note note, bool isNewNote) {
-    Navigator.push(
+  void goToNotePage(Note note, bool isNewNote) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditingNotePage(
@@ -57,6 +57,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final noteData = Provider.of<NoteData>(context);
+    final List<Note> allNotes = noteData.getAllNotes();
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -81,94 +83,100 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Container(
+      body: Consumer<NoteData>(
+        builder: (context, value, child) => Container(
+          color: grey2,
+          padding:
+              const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Notes',
+                style: TextStyle(
+                  color: Colors.grey[900],
+                  fontSize: 35,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              Container(
+                padding: const EdgeInsets.only(
+                    top: 10, left: 30, right: 20, bottom: 20),
+                child: Text(
+                  'On My phone',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: textColor),
+                ),
+              ),
+              (value.getAllNotes().isEmpty)
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 200),
+                      child: Center(
+                        child: Text(
+                          'Empty List',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Expanded(
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            for (int i = 0; i < allNotes.length; i++)
+                              TaskColumn(
+                                notes: allNotes[i],
+                                onDelete: deleteNote,
+                                onTap: () => goToNotePage(allNotes[i], false),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(top: 10),
         color: grey2,
-        padding:
-            const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Folders',
-              style: TextStyle(
-                color: Colors.grey[900],
-                fontSize: 35,
-                fontWeight: FontWeight.w700,
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
+              child: IconButton(
+                onPressed: () {},
+                icon: Icon(
+                  Icons.create_new_folder_outlined,
+                  size: 35,
+                  color: yellow1,
+                ),
               ),
             ),
-            const SizedBox(
-              height: 10,
-            ),
-            SizedBox(
-              height: 50,
-              child: TextField(
-                decoration: InputDecoration(
-                    hintText: 'Search...',
-                    hintStyle: TextStyle(
-                      color: textColor,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    filled: true,
-                    fillColor: grey1,
-                    suffixIcon: Icon(
-                      Icons.search,
-                      color: textColor,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20)),
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: IconButton(
+                onPressed: createNewNote,
+                icon: Icon(
+                  Icons.note_add_outlined,
+                  size: 35,
+                  color: yellow1,
+                ),
               ),
             ),
           ],
         ),
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 20),
-                child: IconButton(
-                  onPressed: () {
-                    setState(
-                      () {
-                        showNewFolderOption = !showNewFolderOption;
-                      },
-                    );
-                  },
-                  icon: Icon(
-                    Icons.create_new_folder_outlined,
-                    size: 35,
-                    color: yellow1,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: IconButton(
-                  onPressed: createNewNote,
-                  icon: Icon(
-                    Icons.note_add_outlined,
-                    size: 35,
-                    color: yellow1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Visibility(
-            visible: showNewFolderOption,
-            child: TextButton(
-              onPressed: () {},
-              child: Text(
-                'New Folder',
-                style: TextStyle(color: textColor),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
