@@ -9,6 +9,15 @@ import '../function/taskcolumn.dart';
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
+  // ignore: library_private_types_in_public_api
+  static final GlobalKey<_HomePageState> homePageKey =
+      GlobalKey<_HomePageState>();
+
+  // Function to create a new note
+  void createNewNote() {
+    homePageKey.currentState?.createNewNote();
+  }
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -63,25 +72,6 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: grey2,
-        actions: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Edit',
-                  style: TextStyle(
-                    color: yellow1,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
       body: Consumer<NoteData>(
         builder: (context, value, child) => Container(
@@ -133,12 +123,23 @@ class _HomePageState extends State<HomePage> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           children: [
-                            for (int i = 0; i < allNotes.length; i++)
-                              TaskColumn(
-                                notes: allNotes[i],
-                                onDelete: deleteNote,
-                                onTap: () => goToNotePage(allNotes[i], false),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.white,
                               ),
+                              child: Column(
+                                children: [
+                                  for (int i = 0; i < allNotes.length; i++)
+                                    TaskColumn(
+                                      notes: allNotes[i],
+                                      onDelete: deleteNote,
+                                      onTap: () =>
+                                          goToNotePage(allNotes[i], false),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -147,25 +148,13 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      floatingActionButton: Container(
-        margin: const EdgeInsets.only(top: 10),
+      bottomNavigationBar: Container(
         color: grey2,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 20),
-              child: IconButton(
-                onPressed: () {},
-                icon: Icon(
-                  Icons.create_new_folder_outlined,
-                  size: 35,
-                  color: yellow1,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.all(10),
               child: IconButton(
                 onPressed: createNewNote,
                 icon: Icon(

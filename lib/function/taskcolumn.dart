@@ -1,4 +1,6 @@
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'package:noteappreplica/function/addnote.dart';
 import '../color palette/colors.dart';
 import '../model/note.dart';
 
@@ -15,41 +17,41 @@ class TaskColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final List<Note> allNotes =
+        Provider.of<NoteData>(context, listen: false).getAllNotes();
+
+    final int index = allNotes.indexOf(notes);
+    final bool isLastItem = index == allNotes.length - 1;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10, left: 10),
-      //padding: const EdgeInsets.all(10),
+      width: double.infinity,
+      // padding: const EdgeInsets.only(top: 5),
       decoration: BoxDecoration(
-        color: containerColor,
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 5.0,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border(
+          bottom: isLastItem ? BorderSide.none : BorderSide(color: grey1),
+        ),
       ),
-      child: Column(
-        children: [
-          ListTile(
-            title: Text(
-              notes.title,
-              style: TextStyle(color: textColor),
-            ),
-            subtitle: Text(
-              notes.text,
-              style: TextStyle(color: textColor),
-            ),
-            onTap: onTap,
-            trailing: IconButton(
-              onPressed: () => onDelete(notes),
-              icon: Icon(
-                Icons.delete,
-                color: Colors.red.shade300,
-              ),
-            ),
+      child: ListTile(
+        title: Text(
+          notes.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: textColor),
+        ),
+        subtitle: Text(
+          notes.text,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: textColor),
+        ),
+        onTap: onTap,
+        trailing: IconButton(
+          onPressed: () => onDelete(notes),
+          icon: Icon(
+            Icons.delete,
+            color: Colors.red.shade300,
           ),
-        ],
+        ),
       ),
     );
   }
